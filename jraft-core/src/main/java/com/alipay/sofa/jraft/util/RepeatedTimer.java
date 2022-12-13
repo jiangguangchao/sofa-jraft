@@ -184,7 +184,9 @@ public abstract class RepeatedTimer implements Describer {
                 LOG.error("Run timer task failed, taskName={}.", RepeatedTimer.this.name, t);
             }
         };
-        this.timeout = this.timer.newTimeout(timerTask, adjustTimeout(this.timeoutMs), TimeUnit.MILLISECONDS);
+        long delay = adjustTimeout(this.timeoutMs);
+        this.timeout = this.timer.newTimeout(timerTask, delay, TimeUnit.MILLISECONDS);
+        LOG.info("{} 添加了延迟{}毫秒的任务", name, delay);
     }
 
     /**

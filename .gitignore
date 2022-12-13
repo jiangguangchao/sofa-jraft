@@ -13,3 +13,5 @@ target/
 *.log*
 data/
 jraft-core/src/test/resources/log4j2.xml
+rhea_raft/
+rhea_db/

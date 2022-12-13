@@ -17,6 +17,13 @@
 package com.alipay.sofa.jraft.example.election;
 
 import com.alipay.sofa.jraft.entity.PeerId;
+import com.alipay.sofa.jraft.option.NodeOptions;
+import com.alipay.sofa.jraft.rhea.metrics.KVMetrics;
+import com.codahale.metrics.ConsoleReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -24,36 +31,54 @@ import com.alipay.sofa.jraft.entity.PeerId;
  */
 public class ElectionBootstrap {
 
+    private static final Logger log = LoggerFactory.getLogger(ElectionBootstrap.class);
+
     // Start elections by 3 instance. Note that if multiple instances are started on the same machine,
     // the first parameter `dataPath` should not be the same.
     public static void main(final String[] args) {
-        if (args.length < 4) {
-            System.out
-                .println("Useage : java com.alipay.sofa.jraft.example.election.ElectionBootstrap {dataPath} {groupId} {serverId} {initConf}");
-            System.out
-                .println("Example: java com.alipay.sofa.jraft.example.election.ElectionBootstrap /tmp/server1 election_test 127.0.0.1:8081 127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083");
-            System.exit(1);
+        String dataPath = "D:/jraft/node808";
+        String groupId = "my_group";
+        int nodeCount = 3;
+        String serverIdStr = args[0];
+        String corServerAddr = null;
+        String initialConfStr = "";
+        for (int i = 1; i <= nodeCount; i++) {
+            String serverAddr = "127.0.0.1:808" + i;
+            initialConfStr += serverAddr + ",";
+            if (Integer.valueOf(serverIdStr) == Integer.valueOf(i)) {
+                corServerAddr = serverAddr;
+                dataPath = dataPath + i;
+            }
         }
-        final String dataPath = args[0];
-        final String groupId = args[1];
-        final String serverIdStr = args[2];
-        final String initialConfStr = args[3];
+
+        initialConfStr = initialConfStr.substring(0, initialConfStr.length() - 1);
+
+        log.info("dataPath : {}", dataPath);
+        log.info("corServerAddr : {}", corServerAddr);
+        log.info("initialConfStr : {}", initialConfStr);
+
 
         final ElectionNodeOptions electionOpts = new ElectionNodeOptions();
         electionOpts.setDataPath(dataPath);
         electionOpts.setGroupId(groupId);
-        electionOpts.setServerAddress(serverIdStr);
+        electionOpts.setServerAddress(corServerAddr);
         electionOpts.setInitialServerAddressList(initialConfStr);
+
+        //开启metrics监控
+        NodeOptions nodeOptions = new NodeOptions();
+        nodeOptions.setEnableMetrics(true);
+        nodeOptions.setElectionTimeoutMs(20000);
+        nodeOptions.getRaftOptions().setElectionHeartbeatFactor(2);
+        electionOpts.setNodeOptions(nodeOptions);
 
         final ElectionNode node = new ElectionNode();
         node.addLeaderStateListener(new LeaderStateListener() {
 
-            PeerId serverId = node.getNode().getLeaderId();
-            String ip       = serverId.getIp();
-            int    port     = serverId.getPort();
-
             @Override
             public void onLeaderStart(long leaderTerm) {
+                PeerId serverId = node.getNode().getLeaderId();
+                String ip       = serverId.getIp();
+                int    port     = serverId.getPort();
                 System.out.println("[ElectionBootstrap] Leader's ip is: " + ip + ", port: " + port);
                 System.out.println("[ElectionBootstrap] Leader start on term: " + leaderTerm);
             }
@@ -64,5 +89,16 @@ public class ElectionBootstrap {
             }
         });
         node.init(electionOpts);
+
+//        if (node.getNode().getNodeMetrics().getMetricRegistry() == null) {
+//            log.warn("MetricRegistry is null");
+//        } else {
+//            ConsoleReporter.forRegistry(node.getNode().getNodeMetrics().getMetricRegistry()) //
+//                    .build() //
+//                    .start(30, TimeUnit.SECONDS);
+//        }
+
+
+
     }
 }

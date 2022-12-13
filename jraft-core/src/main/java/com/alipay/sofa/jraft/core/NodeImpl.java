@@ -2620,7 +2620,7 @@ public class NodeImpl implements Node, RaftServerService {
     private void preVote() {
         long oldTerm;
         try {
-            LOG.info("Node {} term {} start preVote.", getNodeId(), this.currTerm);
+            LOG.info("Node {} term {} start preVote.  this.state：{}", getNodeId(), this.currTerm, this.state);
             if (this.snapshotExecutor != null && this.snapshotExecutor.isInstallingSnapshot()) {
                 LOG.warn(
                     "Node {} term {} doesn't do preVote when installing snapshot as the configuration may be out of date.",

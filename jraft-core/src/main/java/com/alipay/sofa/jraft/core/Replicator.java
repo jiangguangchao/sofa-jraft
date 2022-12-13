@@ -530,7 +530,9 @@ public class Replicator implements ThreadId.OnError {
     private void startHeartbeatTimer(final long startMs) {
         final long dueTime = startMs + this.options.getDynamicHeartBeatTimeoutMs();
         try {
-            this.heartbeatTimer = this.timerManager.schedule(() -> onTimeout(this.id), dueTime - Utils.nowMs(),
+            long delay = dueTime - Utils.nowMs();
+            LOG.info("延迟{}毫秒后，开始发送心跳", delay);
+            this.heartbeatTimer = this.timerManager.schedule(() -> onTimeout(this.id), delay,
                 TimeUnit.MILLISECONDS);
         } catch (final Exception e) {
             LOG.error("Fail to schedule heartbeat timer", e);
